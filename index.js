@@ -2,11 +2,13 @@ require("dotenv").config();
 const session = require("express-session");
 const express = require("express");
 const mongoose = require("mongoose");
+const bodyparser = require("body-parser");
 const cors = require("cors");
 const MongoDBStore = require("connect-mongodb-session")(session); // add this package to store the user session id automatically on mongodb
 // check on your db, you will have another collection (next to people) which is 'mySessions'
 const loginRouter = require("./routes/loginRoutes");
 const projectRouter = require("./routes/projectRoutes");
+const urlRouter = require("./routes/urlRoutes");
 
 const app = express();
 const MAX_AGE = 1000 * 60 * 60 * 3; // 3hrs
@@ -43,12 +45,15 @@ app.use(
   })
 );
 
+app.use(bodyparser.urlencoded({extended: true}));
+app.use(bodyparser.json());
 app.use(cors(corsOptions));
 app.use(express.json());
 
 // ROUTERS
 app.use("/api", loginRouter);
 app.use("/api", projectRouter);
+app.use("/api", urlRouter);
 
 // START SERVER
 app.listen(port, () => {

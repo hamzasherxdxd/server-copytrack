@@ -4,7 +4,7 @@ const autoIncrement = require("mongoose-auto-increment");
 autoIncrement.initialize(mongoose.connection);
 const ProjectSchema = new mongoose.Schema({
   user: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: "User",
   },

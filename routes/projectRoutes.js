@@ -1,4 +1,5 @@
 const ProjectSchema = require("../models/ProjectSchema");
+const UserSchema = require("../models/UserSchema");
 const bcrypt = require("bcrypt");
 const express = require("express");
 const router = express.Router();
@@ -6,9 +7,9 @@ const router = express.Router();
 router.post("/project", async (req, res) => {
   // console.log(req.body);
   // console.log("user", req.session.user);
-  console.log("user", req.session);
+  // console.log("user", req.session);
   const { project_name, description, email_notification } = req.body;
-  const user = req.session.user.username;
+  const user = await UserSchema.findOne({ username: req.session.user.username });
 
   if (!project_name || !description) {
     return res.status(400).json({ message: "Fill all required fields" });
@@ -21,6 +22,7 @@ router.post("/project", async (req, res) => {
     user: user,
   });
 
+
   const newProjectRes = await newProject.save();
   if (newProjectRes) {
     return res.status(200).json({ message: "Project saved successfully" });
@@ -28,9 +30,10 @@ router.post("/project", async (req, res) => {
 });
 
 router.get("/project", async (req, res) => {
-  const projects = await ProjectSchema.find({user: req.session.user.username});
+  const user = await UserSchema.findOne({ username: req.session.user.username });
+  const projects = await ProjectSchema.find({user: user._id});
   // console.log(req.session.user);
-  console.log(projects);
+  // console.log(projects);
   if (projects.length > 0) {
     return res.status(200).json({ message: "Projects ", projects});
   } else {
@@ -40,10 +43,10 @@ router.get("/project", async (req, res) => {
 
 router.get('/project/:id', async (req, res) => {
   const project = await ProjectSchema.findOne({project_id: req.params.id});
-  console.log(req.session);
+  // console.log(req.session);
   // console.log(project.user, req.session.user.username)
   // if (req.session.user.username === project.user)
-  console.log(project);
+  // console.log(project);
   if (!project) {
     return res.status(404).json({ message: "Project not found" });
   }
@@ -52,3 +55,4 @@ router.get('/project/:id', async (req, res) => {
 })
 
 module.exports = router;
+

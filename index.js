@@ -9,6 +9,7 @@ const MongoDBStore = require("connect-mongodb-session")(session); // add this pa
 const loginRouter = require("./routes/loginRoutes");
 const projectRouter = require("./routes/projectRoutes");
 const urlRouter = require("./routes/urlRoutes");
+const googleAnalyticsRouter = require("./routes/googleAnalyticsRoutes");
 
 const app = express();
 const MAX_AGE = 1000 * 60 * 60 * 3; // 3hrs
@@ -53,6 +54,7 @@ app.use(express.json());
 // ROUTERS
 app.use("/api", loginRouter);
 app.use("/api", projectRouter);
+app.use("/api", googleAnalyticsRouter);
 app.use("/api", urlRouter);
 
 // START SERVER

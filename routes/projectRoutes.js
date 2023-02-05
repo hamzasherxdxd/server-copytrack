@@ -5,9 +5,6 @@ const express = require("express");
 const router = express.Router();
 
 router.post("/project", async (req, res) => {
-  // console.log(req.body);
-  // console.log("user", req.session.user);
-  // console.log("user", req.session);
   const { project_name, description, email_notification } = req.body;
   const user = await UserSchema.findOne({ username: req.session.user.username });
 
@@ -32,8 +29,6 @@ router.post("/project", async (req, res) => {
 router.get("/project", async (req, res) => {
   const user = await UserSchema.findOne({ username: req.session.user.username });
   const projects = await ProjectSchema.find({user: user._id});
-  // console.log(req.session.user);
-  // console.log(projects);
   if (projects.length > 0) {
     return res.status(200).json({ message: "Projects ", projects});
   } else {
@@ -42,11 +37,7 @@ router.get("/project", async (req, res) => {
 });
 
 router.get('/project/:id', async (req, res) => {
-  const project = await ProjectSchema.findOne({project_id: req.params.id});
-  // console.log(req.session);
-  // console.log(project.user, req.session.user.username)
-  // if (req.session.user.username === project.user)
-  // console.log(project);
+  const project = await ProjectSchema.findOne({project_id: req.params.id, user: req.session.user.id});
   if (!project) {
     return res.status(404).json({ message: "Project not found" });
   }

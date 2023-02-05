@@ -1,4 +1,5 @@
 const UserSchema = require("../models/UserSchema");
+const GoogleAnalyticsSchema = require("../models/GoogleAnalyticsSchema");
 const bcrypt = require("bcrypt");
 const express = require("express");
 const router = express.Router();
@@ -31,30 +32,31 @@ router.get("/user", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  console.log("Access Token: " + req.body.googleAccessToken);
+  // console.log("Access Token: " + req.body.googleAccessToken);
   if (req.body.googleAccessToken) {
     const { googleAccessToken } = req.body;
     axios
       .get("https://www.googleapis.com/oauth2/v3/userinfo", {
         headers: {
           Authorization: "Bearer " + googleAccessToken,
+          // Authorization: "Bearer ya29.a0AVvZVsrw5wBATzu5GtT12JrO5Exq3eylYKWJBU4lxjOT6TajKWfsQdjPHR6Ew622SFL086aaTkFI-8IKwKbHvxZqV_WwlVcC4XB8B_MH5jKx9hS9O_QGsJRmK8WfM3WiZgstAKJsZdO77INekN-0d4eAon8jTTkcc90aCgYKAVASARISFQGbdwaIIkfqC_aL-1U5KDy01Y0kgQ0170",
         },
       })
       .then(async (response) => {
-        console.log("Response: " + response.data.email);
-        const username = response.data.given_name + response.data.family_name;
-        const email = response.data.email;
-        const existingUser = await UserSchema.findOne({
-          email: email,
-        });
-        if (existingUser) {
-          return res.status(400).json({ message: "User already registered" });
-        }
+        // console.log(response.data);
         const result = await UserSchema.create({
-          email: email,
-          username: username,
+          email: response.data.email,
+          username: response.data.given_name + response.data.family_name,
         });
-        console.log("Result: " + result);
+
+        const userSession = {
+          email: result.email,
+          id: result._id,
+          username: result.username,
+        };
+
+        req.session.user = userSession;
+        // console.log("Result: " + result);
         const token = jwt.sign(
           {
             email: result.email,
@@ -64,11 +66,127 @@ router.post("/register", async (req, res) => {
           { expiresIn: "1h" }
         );
         res.status(200).json({ result, token });
+      });
+
+    // axios.get("https://analyticsadmin.googleapis.com/v1alpha/accountSummaries",
+    axios
+      .get(
+        "https://www.googleapis.com/analytics/v3/management/accountSummaries",
+        {
+          headers: {
+            Authorization: "Bearer " + googleAccessToken,
+            // Authorization: "Bearer ya29.a0AVvZVsrw5wBATzu5GtT12JrO5Exq3eylYKWJBU4lxjOT6TajKWfsQdjPHR6Ew622SFL086aaTkFI-8IKwKbHvxZqV_WwlVcC4XB8B_MH5jKx9hS9O_QGsJRmK8WfM3WiZgstAKJsZdO77INekN-0d4eAon8jTTkcc90aCgYKAVASARISFQGbdwaIIkfqC_aL-1U5KDy01Y0kgQ0170",
+          },
+        }
+      )
+      .then(async (response) => {
+        console.log(response.data);
+        // for (let i = 0; i < response.data.items.length; i++) {
+        //   console.log(response.data.items[i].webProperties);
+        // }
+
+        // console.log(response.data);
+
+        for (let account of response.data.items) {
+          for (let property of account.webProperties) {
+            for (let profile of property.profiles) {
+              const ga = await GoogleAnalyticsSchema.create({
+                user: req.session.user.id,
+                account_name: account.name,
+                account_id: account.id,
+                property_name: property.name,
+                property_id: property.id,
+                url: property.websiteUrl,
+                profile_name: profile.name,
+                profile_id: profile.id,
+              });
+              console.log(ga);
+            }
+          }
+        }
+
+        // for(const item of response.data.items) {
+        //   console.log("ITEM  ...  " + "%j" , item);
+        //   for (const property of item.webProperties) {
+        //     console.log("PROPERTY   ...   " + "%j" ,property);
+        //     const account_id = item.id;
+        //     const ga = await GoogleAnalyticsSchema.create({
+        //       user: req.session.user.id,
+        //       account_name: item.name,
+        //       account_id: item.id,
+
+        //     })
+        //   }
+        // }
+        // const accountSummaries = response.data.accountSummaries;
+        // for (const account of accountSummaries){
+        //   for (const property of account.propertySummaries){
+        //     const account_id= account.name.split('/');
+        //     const ga = await GoogleAnalyticsSchema.create({
+        //       user: req.session.user.id,
+        //       account_name: account.displayName,
+        //       account_id: account_id[1],
+        //       property_name: property.displayName,
+        //     })
+        // console.log(ga);
+        // }
+        // }
+        // console.log("Response: " + response.data.email);
+        // const username = response.data.given_name + response.data.family_name;
+        // const email = response.data.email;
+        // const existingUser = await UserSchema.findOne({
+        //   email: email,
+        // });
+        // if (existingUser) {
+        //   return res.status(400).json({ message: "User already registered" });
+        // }
+        // axios
+        //   .get(
+        //     "https://analyticsadmin.googleapis.com/v1alpha/accountSummaries",
+        //     {
+        //       headers: {
+        //         Authorization: "Bearer " + googleAccessToken,
+        //       },
+        //     }
+        //   )
+        //   .then(async (response) => {
+        //     // console.log(response.data);
+        //     const accountSummaries = response.data.accountSummaries;
+        //     for (const account of accountSummaries) {
+        //       for (const property of account.propertySummaries) {
+        //         const account_id = account.name.split("/");
+        //         const ga = await GoogleAnalyticsSchema.create({
+        //           user: req.session.user.id,
+        //           account_name: account.displayName,
+        //           account_id: account_id[1],
+        //           property_name: property.displayName,
+        //         });
+        //         console.log(ga);
+        //       }
+        //     }
       })
       .catch((err) => {
-        console.log(err.message);
-        res.status(400).json({ message: "Invalid token" });
+        console.log(err);
       });
+    //   const result = await UserSchema.create({
+    //     email: email,
+    //     // username: username,
+    //   });
+    //   console.log("Result: " + result);
+    //   const token = jwt.sign(
+    //     {
+    //       email: result.email,
+    //       id: result._id,
+    //     },
+    //     config.get("JWT_SECRET"),
+    //     { expiresIn: "1h" }
+    //   );
+    //   res.status(200).json({ result, token });
+    // })
+    // .catch((err) => {
+    //   console.log(err.message + " asdf");
+    //   res.status(400).json({ message: "Invalid token" });
+    // });
   } else {
     const { username, email, password } = req.body;
 
@@ -108,7 +226,74 @@ router.post(`/login`, async (req, res) => {
         },
       })
       .then(async (response) => {
-        console.log(response.data);
+        // axios.get("https://analyticsadmin.googleapis.com/v1alpha/accountSummaries",
+
+        // axios
+        //   .get(
+        //     "https://www.googleapis.com/analytics/v3/management/accountSummaries",
+        //     {
+        //       headers: {
+        //         Authorization: "Bearer " + googleAccessToken,
+        //       },
+        //     }
+        //   )
+        //   .then(async (response) => {
+        // console.log(response.data);
+        // for (let i = 0; i < response.data.items.length; i++) {
+        //   console.log(response.data.items[i].webProperties);
+        // }
+
+        // console.log(response.data);
+        // for (let account of response.data.items) {
+        //   for (let property of account.webProperties){
+        //     for (let profile of property.profiles){
+        //       const ga = await GoogleAnalyticsSchema.create({
+        //         user: req.session.user.id,
+        //         account_name: account.name,
+        //         account_id: account.id,
+        //         property_name: property.name,
+        //         property_id: property.id,
+        //         url: property.websiteUrl,
+        //         profile_name: profile.name,
+        //         profile_id: profile.id,
+        //       })
+        //       console.log(ga)
+        //     }
+        //   }
+        // }
+
+        // for(const item of response.data.items) {
+        //   console.log("ITEM  ...  " + "%j" , item);
+        //   for (const property of item.webProperties) {
+        //     console.log("PROPERTY   ...   " + "%j" ,property);
+        //     const account_id = item.id;
+        //     const ga = await GoogleAnalyticsSchema.create({
+        //       user: req.session.user.id,
+        //       account_name: item.name,
+        //       account_id: item.id,
+
+        //     })
+        //   }
+        // }
+        // const accountSummaries = response.data.accountSummaries;
+        // for (const account of accountSummaries){
+        //   for (const property of account.propertySummaries){
+        //     const account_id= account.name.split('/');
+        //     const ga = await GoogleAnalyticsSchema.create({
+        //       user: req.session.user.id,
+        //       account_name: account.displayName,
+        //       account_id: account_id[1],
+        //       property_name: property.displayName,
+        //     })
+        // console.log(ga);
+        // }
+        // }
+        // })
+        // .catch((err) => {
+        //   console.log(err);
+        // });
+
+        // console.log(response.data);
         const email = response.data.email;
 
         const existingUser = await UserSchema.findOne({ email });
@@ -129,9 +314,12 @@ router.post(`/login`, async (req, res) => {
           id: existingUser._id,
           username: existingUser.username,
         };
+
         req.session.user = userSession;
-        console.log(req.session.user);
-        return res.status(200).json({ result: existingUser, token, userSession });
+        // console.log(req.session.user);
+        return res
+          .status(200)
+          .json({ result: existingUser, token, userSession });
       })
       .catch((err) => {
         console.log(err.message);
@@ -167,10 +355,10 @@ router.post(`/login`, async (req, res) => {
         email: existingUser.email,
         id: existingUser._id,
         username: existingUser.username,
-      }
+      };
       req.session.user = userSession;
-      console.log(req.session.user);
-      res.status(200).json({ result: existingUser, token, userSession});
+      // console.log(req.session.user);
+      res.status(200).json({ result: existingUser, token, userSession });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

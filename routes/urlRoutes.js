@@ -7,9 +7,11 @@ const router = express.Router();
 
 router.post("/project/:id/url", async (req, res) => {
   const { url, pub_date, description, old_url } = req.body;
-  console.log("ASDF");
+  // console.log("ASDF");
+  // console.log(req.params.id);
   // const project_id = req.params.id;
   const project = await ProjectSchema.findOne({ project_id: req.params.id });
+  // console.log(project._id);
   const user = await UserSchema.findOne({username: req.session.user.username });
   if (!url) {
     return res.status(400).json({ message: "Fill all required fields" });
@@ -32,12 +34,12 @@ router.post("/project/:id/url", async (req, res) => {
 router.get("/project/:id/url", async (req, res) => {
   const project = await ProjectSchema.findOne({ project_id: req.params.id });
   const user = await UserSchema.findOne({ username: req.session.user.username });
-  console.log(user._id, project._id);
+  // console.log(user._id, project._id);
   const url = await UrlSchema.find({
     user: user._id,
     project_id: project._id,
   });
-  console.log(url);
+  // console.log(url);
   if (!url) {
     return res.status(404).json({ message: "Urls not found" });
   }

@@ -127,14 +127,12 @@ router.post("/ga", async (req, res) => {
   axios(options)
     .then((response) => {
       report = response.data.reports[0];
-      res
-        .status(200)
-        .json({
-          message: "ASDF",
-          data: gaData,
-          report: report,
-          views: viewIds,
-        });
+      res.status(200).json({
+        message: "ASDF",
+        data: gaData,
+        report: report,
+        views: viewIds,
+      });
     })
     .catch((err) => {
       console.log(err.message);
@@ -144,10 +142,20 @@ router.post("/ga", async (req, res) => {
 router.post("/report/7", async (req, res) => {
   const accessToken = req.body.access_token;
   const givenUrl = req.body.url;
-  console.log(givenUrl);
-  const urlsFromDb = await GoogleAnalyticsSchema.findOne({url: givenUrl});
-  if (urlsFromDb === null){
-    res.status(404).send({message: "This URL is not available on your GoogleAnalytics Account", report: {data: {}}})
+  const strippedUrl = new URL(givenUrl);
+  console.log(strippedUrl);
+  console.log(strippedUrl.pathname);
+  // console.log(givenUrl);
+  const urlsFromDb = await GoogleAnalyticsSchema.findOne({
+    url: strippedUrl.origin,
+  });
+  if (urlsFromDb === null) {
+    res
+      .status(404)
+      .send({
+        message: "This URL is not available on your GoogleAnalytics Account",
+        report: { data: {} },
+      });
     return;
   }
   const viewId = urlsFromDb.profile_id;
@@ -179,6 +187,17 @@ router.post("/report/7", async (req, res) => {
               expression: "ga:transactions",
             },
           ],
+          dimensionFilterClauses: [
+            {
+              filters: [
+                {
+                  operator: "EXACT",
+                  dimensionName: "ga:pagePath",
+                  expressions: [strippedUrl.pathname],
+                },
+              ],
+            },
+          ],
           dimensions: [{ name: "ga:date" }, { name: "ga:landingPagePath" }],
         },
       ],
@@ -187,11 +206,9 @@ router.post("/report/7", async (req, res) => {
   axios(options)
     .then((response) => {
       report = response.data.reports[0];
-      res
-        .status(200)
-        .json({
-          report: report,
-        });
+      res.status(200).json({
+        report: report,
+      });
     })
     .catch((err) => {
       console.log(err.message);
@@ -201,10 +218,18 @@ router.post("/report/7", async (req, res) => {
 router.post("/report/14", async (req, res) => {
   const accessToken = req.body.access_token;
   const givenUrl = req.body.url;
-  console.log(givenUrl);
-  const urlsFromDb = await GoogleAnalyticsSchema.findOne({url: givenUrl});
-  if (urlsFromDb === null){
-    res.status(404).send({message: "This URL is not available on your GoogleAnalytics Account", report: {data: {}}})
+  const strippedUrl = new URL(givenUrl);
+  // console.log(givenUrl);
+  const urlsFromDb = await GoogleAnalyticsSchema.findOne({
+    url: strippedUrl.origin,
+  });
+  if (urlsFromDb === null) {
+    res
+      .status(404)
+      .send({
+        message: "This URL is not available on your GoogleAnalytics Account",
+        report: { data: {} },
+      });
     return;
   }
   const viewId = urlsFromDb.profile_id;
@@ -236,6 +261,18 @@ router.post("/report/14", async (req, res) => {
               expression: "ga:transactions",
             },
           ],
+          dimensionFilterClauses: [
+            {
+              filters: [
+                {
+                  operator: "EXACT",
+                  dimensionName: "ga:pagePath",
+                  expressions: [strippedUrl.pathname],
+                },
+              ],
+            },
+          ],
+
           dimensions: [{ name: "ga:date" }, { name: "ga:landingPagePath" }],
         },
       ],
@@ -244,25 +281,32 @@ router.post("/report/14", async (req, res) => {
   axios(options)
     .then((response) => {
       report = response.data.reports[0];
-      res
-        .status(200)
-        .json({
-          report: report,
-        });
+      res.status(200).json({
+        report: report,
+      });
     })
     .catch((err) => {
       console.log(err.message);
     });
 });
 
-
 router.post("/report/30", async (req, res) => {
   const accessToken = req.body.access_token;
   const givenUrl = req.body.url;
-  console.log(givenUrl);
-  const urlsFromDb = await GoogleAnalyticsSchema.findOne({url: givenUrl});
-  if (urlsFromDb === null){
-    res.status(404).send({message: "This URL is not available on your GoogleAnalytics Account", report: {data: {}}})
+
+  const strippedUrl = new URL(givenUrl);
+  // console.log(givenUrl);
+  const urlsFromDb = await GoogleAnalyticsSchema.findOne({
+    url: strippedUrl.origin,
+  });
+  // console.log(givenUrl);
+  if (urlsFromDb === null) {
+    res
+      .status(404)
+      .send({
+        message: "This URL is not available on your GoogleAnalytics Account",
+        report: { data: {} },
+      });
     return;
   }
   const viewId = urlsFromDb.profile_id;
@@ -294,6 +338,18 @@ router.post("/report/30", async (req, res) => {
               expression: "ga:transactions",
             },
           ],
+          dimensionFilterClauses: [
+            {
+              filters: [
+                {
+                  operator: "EXACT",
+                  dimensionName: "ga:pagePath",
+                  expressions: [strippedUrl.pathname],
+                },
+              ],
+            },
+          ],
+
           dimensions: [{ name: "ga:date" }, { name: "ga:landingPagePath" }],
         },
       ],
@@ -302,16 +358,13 @@ router.post("/report/30", async (req, res) => {
   axios(options)
     .then((response) => {
       report = response.data.reports[0];
-      res
-        .status(200)
-        .json({
-          report: report,
-        });
+      res.status(200).json({
+        report: report,
+      });
     })
     .catch((err) => {
       console.log(err.message);
     });
 });
-
 
 module.exports = router;
